@@ -1,0 +1,267 @@
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAnnotation } from '../hooks/useAnnotation'
+import AnnotationForm from '../components/AnnotationForm'
+import TopNavBar from '../components/TopNavBar'
+import BottomReviewBar from '../components/BottomReviewBar'
+import HighlightedPost from '../components/HighlightedPost'
+import ConfirmModal from '../components/ConfirmModal'
+
+function Annotate() {
+  const navigate = useNavigate()
+  const [annotator, setAnnotator] = useState(null)
+  const [highlightText, setHighlightText] = useState(null)
+  const [highlightColor, setHighlightColor] = useState(null)
+  const [highlightTerms, setHighlightTerms] = useState(null)
+
+  const handleHoverSourceText = (text, color, terms = null) => {
+    setHighlightText(text)
+    setHighlightColor(color)
+    setHighlightTerms(terms)
+  }
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem('annotator')
+    if (!stored) {
+      navigate('/')
+      return
+    }
+    setAnnotator(JSON.parse(stored))
+  }, [navigate])
+
+  const {
+    currentPost,
+    currentOutput,
+    updateOutput,
+    index,
+    totalPosts,
+    goToNext,
+    goToPrevious,
+    goToIndex,
+    reviewedIds,
+    modifiedIds,
+    saving,
+    loading,
+    markReviewed,
+    hasUnsavedChanges,
+    showDiscardModal,
+    confirmDiscard,
+    cancelNavigation
+  } = useAnnotation(annotator)
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('annotator')
+    navigate('/')
+  }
+
+  if (!annotator) return null
+
+  if (loading) {
+    return (
+      <div style={styles.loadingContainer}>
+        <p>Loading your progress...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div style={styles.container}>
+      {/* Header */}
+      <div style={styles.header}>
+        <h1 style={styles.title}>Annotation Tool</h1>
+        <div style={styles.headerRight}>
+          <span style={styles.annotatorName}>Annotator: {annotator.name}</span>
+          <button onClick={handleLogout} style={styles.logoutButton}>
+            Logout
+          </button>
+        </div>
+      </div>
+
+      {/* Top Navigation Bar */}
+      <TopNavBar
+        index={index}
+        totalPosts={totalPosts}
+        reviewedIds={reviewedIds}
+        modifiedIds={modifiedIds}
+        onPrevious={goToPrevious}
+        onNext={goToNext}
+        onGoToIndex={goToIndex}
+        currentExtractionId={currentPost?.extraction_id}
+      />
+
+      {/* Main content */}
+      <div style={styles.mainContent}>
+        {/* Left panel - Forum post */}
+        <div style={styles.leftPanel}>
+          <h3 style={styles.panelTitle}>Forum Post</h3>
+          <div style={styles.postMeta}>
+            <span>ID: {currentPost?.extraction_id}</span>
+            <span>Post ID: {currentPost?.post_id}</span>
+          </div>
+          <div style={styles.postContent}>
+            <HighlightedPost
+              text={currentPost?.forum_post}
+              highlightText={highlightText}
+              highlightColor={highlightColor}
+              highlightTerms={highlightTerms}
+            />
+          </div>
+        </div>
+
+        {/* Right panel - Annotation form */}
+        <div style={styles.rightPanel}>
+          <h3 style={styles.panelTitle}>
+            Annotation
+            {saving && <span style={styles.savingBadge}>Saving...</span>}
+            {!saving && hasUnsavedChanges && <span style={styles.unsavedBadge}>Unsaved changes</span>}
+          </h3>
+
+          <div style={styles.formContainer}>
+            <AnnotationForm
+              output={currentOutput}
+              onChange={updateOutput}
+              onHoverSourceText={handleHoverSourceText}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Review Bar */}
+      <BottomReviewBar
+        reviewedIds={reviewedIds}
+        saving={saving}
+        onMarkReviewed={markReviewed}
+        currentExtractionId={currentPost?.extraction_id}
+      />
+
+      {/* Discard changes confirmation modal */}
+      <ConfirmModal
+        isOpen={showDiscardModal}
+        title="Unsaved Changes"
+        message="You have unsaved changes. If you navigate away, your changes will be lost."
+        confirmLabel="Discard changes"
+        cancelLabel="Cancel"
+        onConfirm={confirmDiscard}
+        onCancel={cancelNavigation}
+      />
+    </div>
+  )
+}
+
+const styles = {
+  container: {
+    height: '100vh',
+    maxHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    background: '#f5f5f5',
+    overflow: 'hidden'
+  },
+  loadingContainer: {
+    height: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '0.75rem 1.5rem',
+    background: 'white',
+    borderBottom: '1px solid #ddd'
+  },
+  title: {
+    margin: 0,
+    fontSize: '1.25rem',
+    fontWeight: '600'
+  },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem'
+  },
+  annotatorName: {
+    fontSize: '0.875rem',
+    color: '#555'
+  },
+  logoutButton: {
+    padding: '0.375rem 0.75rem',
+    fontSize: '0.75rem',
+    background: '#f3f4f6',
+    border: '1px solid #d1d5db',
+    borderRadius: '4px',
+    cursor: 'pointer'
+  },
+  mainContent: {
+    flex: 1,
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '1rem',
+    padding: '1rem',
+    overflow: 'hidden'
+  },
+  leftPanel: {
+    background: 'white',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden'
+  },
+  rightPanel: {
+    background: '#fdfdfd',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden'
+  },
+  panelTitle: {
+    margin: 0,
+    padding: '0.75rem 1rem',
+    fontSize: '1rem',
+    fontWeight: '600',
+    borderBottom: '1px solid #eee',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+  postMeta: {
+    padding: '0.5rem 1rem',
+    fontSize: '0.75rem',
+    color: '#666',
+    background: '#fafafa',
+    borderBottom: '1px solid #eee',
+    display: 'flex',
+    gap: '1rem'
+  },
+  postContent: {
+    flex: 1,
+    padding: '1rem',
+    overflowY: 'auto',
+    fontSize: '0.9rem',
+    lineHeight: '1.6'
+  },
+  formContainer: {
+    flex: 1,
+    padding: '1rem',
+    overflowY: 'auto'
+  },
+  savingBadge: {
+    fontSize: '0.75rem',
+    color: '#666',
+    fontWeight: 'normal'
+  },
+  unsavedBadge: {
+    fontSize: '0.75rem',
+    color: '#f59e0b',
+    fontWeight: '500',
+    background: '#fef3c7',
+    padding: '0.125rem 0.5rem',
+    borderRadius: '4px',
+    border: '1px solid #fcd34d'
+  }
+}
+
+export default Annotate
