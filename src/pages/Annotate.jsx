@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAnnotation } from '../hooks/useAnnotation'
 import AnnotationForm from '../components/AnnotationForm'
-import TopNavBar from '../components/TopNavBar'
 import BottomReviewBar from '../components/BottomReviewBar'
 import HighlightedPost from '../components/HighlightedPost'
 import ConfirmModal from '../components/ConfirmModal'
@@ -77,18 +76,6 @@ function Annotate() {
         </div>
       </div>
 
-      {/* Top Navigation Bar */}
-      <TopNavBar
-        index={index}
-        totalPosts={totalPosts}
-        reviewedIds={reviewedIds}
-        modifiedIds={modifiedIds}
-        onPrevious={goToPrevious}
-        onNext={goToNext}
-        onGoToIndex={goToIndex}
-        currentExtractionId={currentPost?.extraction_id}
-      />
-
       {/* Main content */}
       <div style={styles.mainContent}>
         {/* Left panel - Forum post */}
@@ -111,9 +98,25 @@ function Annotate() {
         {/* Right panel - Annotation form */}
         <div style={styles.rightPanel}>
           <h3 style={styles.panelTitle}>
-            Annotation
-            {saving && <span style={styles.savingBadge}>Saving...</span>}
-            {!saving && hasUnsavedChanges && <span style={styles.unsavedBadge}>Unsaved changes</span>}
+            <span>Annotation</span>
+            <div style={styles.titleRight}>
+              <span style={styles.medicationChip}>
+                {(() => {
+                  const total = currentOutput?.medications?.length || 0
+                  const reviewed = currentOutput?.medications?.filter(m => m._reviewed).length || 0
+                  return `${reviewed}/${total} Medication${total !== 1 ? 's' : ''}`
+                })()}
+              </span>
+              <span style={styles.symptomChip}>
+                {(() => {
+                  const total = currentOutput?.symptoms?.length || 0
+                  const reviewed = currentOutput?.symptoms?.filter(s => s._reviewed).length || 0
+                  return `${reviewed}/${total} Symptom${total !== 1 ? 's' : ''}`
+                })()}
+              </span>
+              {saving && <span style={styles.savingBadge}>Saving...</span>}
+              {!saving && hasUnsavedChanges && <span style={styles.unsavedBadge}>Unsaved changes</span>}
+            </div>
           </h3>
 
           <div style={styles.formContainer}>
@@ -129,9 +132,15 @@ function Annotate() {
       {/* Bottom Review Bar */}
       <BottomReviewBar
         reviewedIds={reviewedIds}
+        modifiedIds={modifiedIds}
         saving={saving}
         onMarkReviewed={markReviewed}
         currentExtractionId={currentPost?.extraction_id}
+        index={index}
+        totalPosts={totalPosts}
+        onPrevious={goToPrevious}
+        onNext={goToNext}
+        onGoToIndex={goToIndex}
       />
 
       {/* Discard changes confirmation modal */}
@@ -225,7 +234,36 @@ const styles = {
     borderBottom: '1px solid #eee',
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: '0.5rem'
+  },
+  titleLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+  titleRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+  medicationChip: {
+    fontSize: '0.7rem',
+    fontWeight: '500',
+    background: '#e8f5e8',
+    color: '#2d5a3d',
+    padding: '0.25rem 0.5rem',
+    borderRadius: '999px',
+    border: '1px solid #a8d5a8'
+  },
+  symptomChip: {
+    fontSize: '0.7rem',
+    fontWeight: '500',
+    background: '#ffeef3',
+    color: '#8a3952',
+    padding: '0.25rem 0.5rem',
+    borderRadius: '999px',
+    border: '1px solid #f5c2d5'
   },
   postMeta: {
     padding: '0.5rem 1rem',

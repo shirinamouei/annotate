@@ -2,19 +2,19 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../supabaseClient'
 import { posts } from '../mockData'
 
-// Helper to remove _isNew flags from output for comparison/saving
+// Helper to remove _isNew and _reviewed flags from output for comparison/saving
 function cleanOutput(output) {
   if (!output) return output
   const cleaned = JSON.parse(JSON.stringify(output))
   if (cleaned.medications) {
     cleaned.medications = cleaned.medications.map(m => {
-      const { _isNew, ...rest } = m
+      const { _isNew, _reviewed, ...rest } = m
       return rest
     })
   }
   if (cleaned.symptoms) {
     cleaned.symptoms = cleaned.symptoms.map(s => {
-      const { _isNew, ...rest } = s
+      const { _isNew, _reviewed, ...rest } = s
       return rest
     })
   }
@@ -169,17 +169,39 @@ export function useAnnotation(annotator) {
     setCurrentOutput(newOutput)
   }, [])
 
+  // Check if all medications and symptoms are reviewed
+  const allItemsReviewed = useCallback(() => {
+    if (!currentOutput) return false
+
+    const medications = currentOutput.medications || []
+    const symptoms = currentOutput.symptoms || []
+
+    // Check if all medications are reviewed
+    const allMedsReviewed = medications.length === 0 || medications.every(m => m._reviewed)
+
+    // Check if all symptoms are reviewed
+    const allSymptomsReviewed = symptoms.length === 0 || symptoms.every(s => s._reviewed)
+
+    return allMedsReviewed && allSymptomsReviewed
+  }, [currentOutput])
+
   // Mark current record as reviewed (and save any modifications)
   const markReviewed = useCallback(async () => {
     if (!annotator?.id || !currentPost) return
 
     const extractionId = currentPost.extraction_id
 
+    // Check if all items are reviewed before allowing mark as reviewed
+    if (!allItemsReviewed()) {
+      alert('Please review all medications and symptoms before marking this record as reviewed.')
+      return false
+    }
+
     // Save modifications when marking as reviewed
     await saveModification(currentOutput)
 
     // If already reviewed, just return after saving
-    if (reviewedIds.has(extractionId)) return
+    if (reviewedIds.has(extractionId)) return true
 
     const { error } = await supabase
       .from('reviews')
@@ -193,8 +215,10 @@ export function useAnnotation(annotator) {
 
     if (!error) {
       setReviewedIds(prev => new Set([...prev, extractionId]))
+      return true
     }
-  }, [annotator?.id, currentPost, reviewedIds, saveModification, currentOutput])
+    return false
+  }, [annotator?.id, currentPost, reviewedIds, saveModification, currentOutput, allItemsReviewed])
 
   // State for pending navigation (used with confirmation modal)
   const [pendingNavigation, setPendingNavigation] = useState(null)

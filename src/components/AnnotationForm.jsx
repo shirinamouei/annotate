@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { SelectField, TextField } from './FormFields'
+import { SelectField } from './FormFields'
 import { OPTIONS, NEW_MEDICATION_TEMPLATE, NEW_SYMPTOM_TEMPLATE } from '../utils/templates'
 import MedicationCard from './MedicationCard'
 import SymptomCard from './SymptomCard'
@@ -80,18 +80,63 @@ function AnnotationForm({ output, onChange, onHoverSourceText }) {
 
   const updateSymptom = (index, newSymptom) => {
     const newSymptoms = [...output.symptoms]
+    const oldSymptom = newSymptoms[index]
     newSymptoms[index] = newSymptom
-    onChange({
-      ...output,
-      symptoms: newSymptoms
-    })
+
+    // If the symptom name changed, update all_symptom_names
+    if (oldSymptom.name !== newSymptom.name) {
+      const allNames = [...(output.summary?.all_symptom_names || [])]
+
+      // Remove old name if it exists
+      if (oldSymptom.name) {
+        const oldIndex = allNames.indexOf(oldSymptom.name)
+        if (oldIndex !== -1) {
+          allNames.splice(oldIndex, 1)
+        }
+      }
+
+      // Add new name if it's not empty and not already in the list
+      if (newSymptom.name && !allNames.includes(newSymptom.name)) {
+        allNames.push(newSymptom.name)
+      }
+
+      onChange({
+        ...output,
+        symptoms: newSymptoms,
+        summary: {
+          ...output.summary,
+          all_symptom_names: allNames
+        }
+      })
+    } else {
+      onChange({
+        ...output,
+        symptoms: newSymptoms
+      })
+    }
   }
 
   const deleteSymptom = (index) => {
     if (window.confirm(`Delete symptom "${output.symptoms[index]?.name || 'unnamed'}"?`)) {
+      const deletedSymptom = output.symptoms[index]
+      const newSymptoms = output.symptoms.filter((_, i) => i !== index)
+
+      // Remove the symptom name from all_symptom_names if it exists
+      let allNames = [...(output.summary?.all_symptom_names || [])]
+      if (deletedSymptom.name) {
+        const nameIndex = allNames.indexOf(deletedSymptom.name)
+        if (nameIndex !== -1) {
+          allNames.splice(nameIndex, 1)
+        }
+      }
+
       onChange({
         ...output,
-        symptoms: output.symptoms.filter((_, i) => i !== index)
+        symptoms: newSymptoms,
+        summary: {
+          ...output.summary,
+          all_symptom_names: allNames
+        }
       })
     }
   }
@@ -107,14 +152,35 @@ function AnnotationForm({ output, onChange, onHoverSourceText }) {
     })
   }
 
-  const updateKeyPhrases = (value) => {
-    // Split by comma and trim
-    const phrases = value ? value.split(',').map(p => p.trim()).filter(p => p) : []
+  const updateKeyPhrase = (index, value) => {
+    const phrases = [...(output.summary?.key_phrases || [])]
+    phrases[index] = value
     updateSummary('key_phrases', phrases)
   }
 
-  const updateAllSymptomNames = (value) => {
-    const names = value ? value.split(',').map(n => n.trim()).filter(n => n) : []
+  const addKeyPhrase = () => {
+    const phrases = [...(output.summary?.key_phrases || []), '']
+    updateSummary('key_phrases', phrases)
+  }
+
+  const deleteKeyPhrase = (index) => {
+    const phrases = (output.summary?.key_phrases || []).filter((_, i) => i !== index)
+    updateSummary('key_phrases', phrases)
+  }
+
+  const updateSymptomName = (index, value) => {
+    const names = [...(output.summary?.all_symptom_names || [])]
+    names[index] = value
+    updateSummary('all_symptom_names', names)
+  }
+
+  const addSymptomName = () => {
+    const names = [...(output.summary?.all_symptom_names || []), '']
+    updateSummary('all_symptom_names', names)
+  }
+
+  const deleteSymptomName = (index) => {
+    const names = (output.summary?.all_symptom_names || []).filter((_, i) => i !== index)
     updateSummary('all_symptom_names', names)
   }
 
@@ -242,29 +308,76 @@ function AnnotationForm({ output, onChange, onHoverSourceText }) {
               onChange={(val) => updateSummary('multiple_symptoms_mentioned', val)}
             />
 
-            <TextField
-              label="Key Phrases (comma-separated)"
-              value={output.summary?.key_phrases?.join(', ') || ''}
-              onChange={updateKeyPhrases}
-              placeholder="phrase 1, phrase 2, phrase 3"
-            />
+            <div style={styles.keyPhrasesSection}>
+              <div style={styles.keyPhrasesHeader}>
+                <label style={styles.keyPhrasesLabel}>Key Phrases</label>
+                <button onClick={addKeyPhrase} style={styles.addKeyPhraseButton}>
+                  + Add
+                </button>
+              </div>
+              {(output.summary?.key_phrases || []).length === 0 && (
+                <p style={styles.emptyKeyPhrases}>No key phrases. Click "+ Add" to add one.</p>
+              )}
+              {(output.summary?.key_phrases || []).map((phrase, i) => (
+                <div key={i} style={styles.keyPhraseRow}>
+                  <input
+                    type="text"
+                    value={phrase}
+                    onChange={(e) => updateKeyPhrase(i, e.target.value)}
+                    placeholder="Enter key phrase"
+                    style={styles.keyPhraseInput}
+                  />
+                  <button
+                    onClick={() => deleteKeyPhrase(i)}
+                    style={styles.deleteKeyPhraseButton}
+                    title="Delete phrase"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
 
-            <div
-              onMouseEnter={() => {
-                const names = output.summary?.all_symptom_names || []
-                if (names.length > 0 && onHoverSourceText) {
-                  onHoverSourceText(null, '#f8d7e0', names) // pink, pass array of terms
-                }
-              }}
-              onMouseLeave={() => onHoverSourceText && onHoverSourceText(null, null, null)}
-              style={styles.hoverableField}
-            >
-              <TextField
-                label="All Symptom Names (comma-separated)"
-                value={output.summary?.all_symptom_names?.join(', ') || ''}
-                onChange={updateAllSymptomNames}
-                placeholder="symptom 1, symptom 2"
-              />
+            <div style={styles.symptomNamesSection}>
+              <div style={styles.symptomNamesHeader}>
+                <label style={styles.symptomNamesLabel}>All Symptom Names</label>
+                <button onClick={addSymptomName} style={styles.addSymptomNameButton}>
+                  + Add
+                </button>
+              </div>
+              {(output.summary?.all_symptom_names || []).length === 0 && (
+                <p style={styles.emptySymptomNames}>No symptom names. Click "+ Add" to add one.</p>
+              )}
+              {(output.summary?.all_symptom_names || []).map((name, i) => {
+                // Find the symptom with this name to get its source_text
+                const matchingSymptom = output.symptoms?.find(s => s.name === name)
+                const sourceText = matchingSymptom?.source_text
+
+                return (
+                  <div key={i} style={styles.symptomNameRow}>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => updateSymptomName(i, e.target.value)}
+                      onMouseEnter={() => {
+                        if (sourceText && sourceText.trim() && onHoverSourceText) {
+                          onHoverSourceText(sourceText.trim(), '#ffeef3')
+                        }
+                      }}
+                      onMouseLeave={() => onHoverSourceText && onHoverSourceText(null, null)}
+                      placeholder="Enter symptom name"
+                      style={styles.symptomNameInput}
+                    />
+                    <button
+                      onClick={() => deleteSymptomName(i)}
+                      style={styles.deleteSymptomNameButton}
+                      title="Delete symptom name"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )
+              })}
             </div>
           </>
         )}
@@ -367,6 +480,113 @@ const styles = {
     margin: '-0.25rem',
     padding: '0.25rem',
     cursor: 'default'
+  },
+  keyPhrasesSection: {
+    marginBottom: '1rem'
+  },
+  keyPhrasesHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '0.5rem'
+  },
+  keyPhrasesLabel: {
+    fontSize: '0.8rem',
+    fontWeight: '500',
+    color: '#444'
+  },
+  addKeyPhraseButton: {
+    padding: '0.25rem 0.5rem',
+    fontSize: '0.7rem',
+    background: '#f0f9ff',
+    color: '#0369a1',
+    border: '1px solid #bae6fd',
+    borderRadius: '4px',
+    cursor: 'pointer'
+  },
+  emptyKeyPhrases: {
+    color: '#999',
+    fontSize: '0.8rem',
+    fontStyle: 'italic',
+    margin: '0.5rem 0'
+  },
+  keyPhraseRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    marginBottom: '0.375rem'
+  },
+  keyPhraseInput: {
+    flex: 1,
+    padding: '0.375rem 0.5rem',
+    fontSize: '0.8rem',
+    border: '1px solid #ddd',
+    borderRadius: '4px'
+  },
+  deleteKeyPhraseButton: {
+    padding: '0.25rem 0.5rem',
+    fontSize: '1rem',
+    background: '#fef2f2',
+    color: '#dc2626',
+    border: '1px solid #fecaca',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    lineHeight: 1
+  },
+  symptomNamesSection: {
+    marginBottom: '1rem',
+    borderRadius: '4px',
+    padding: '0.25rem',
+    transition: 'background 0.15s ease'
+  },
+  symptomNamesHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '0.5rem'
+  },
+  symptomNamesLabel: {
+    fontSize: '0.8rem',
+    fontWeight: '500',
+    color: '#444'
+  },
+  addSymptomNameButton: {
+    padding: '0.25rem 0.5rem',
+    fontSize: '0.7rem',
+    background: '#fdf2f8',
+    color: '#be185d',
+    border: '1px solid #fbcfe8',
+    borderRadius: '4px',
+    cursor: 'pointer'
+  },
+  emptySymptomNames: {
+    color: '#999',
+    fontSize: '0.8rem',
+    fontStyle: 'italic',
+    margin: '0.5rem 0'
+  },
+  symptomNameRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    marginBottom: '0.375rem'
+  },
+  symptomNameInput: {
+    flex: 1,
+    padding: '0.375rem 0.5rem',
+    fontSize: '0.8rem',
+    border: '1px solid #ddd',
+    borderRadius: '4px'
+  },
+  deleteSymptomNameButton: {
+    padding: '0.25rem 0.5rem',
+    fontSize: '1rem',
+    background: '#fef2f2',
+    color: '#dc2626',
+    border: '1px solid #fecaca',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    lineHeight: 1
   }
 }
 

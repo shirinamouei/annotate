@@ -58,6 +58,15 @@ const SymptomCard = forwardRef(function SymptomCard({ symptom, index, onChange, 
           Symptom {index + 1}{symptom.name ? `: ${symptom.name}` : ''}
           {isNew && <span style={styles.newBadge}>NEW</span>}
         </span>
+        <label style={styles.reviewLabel}>
+          <input
+            type="checkbox"
+            checked={symptom._reviewed || false}
+            onChange={(e) => updateField('_reviewed', e.target.checked)}
+            style={styles.reviewCheckbox}
+          />
+          <span style={styles.reviewText}>Reviewed</span>
+        </label>
         <button
           onClick={onDelete}
           style={styles.deleteButton}
@@ -212,6 +221,26 @@ const styles = {
     border: '1px solid #fca5a5',
     borderRadius: '4px',
     cursor: 'pointer'
+  },
+  reviewLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+    cursor: 'pointer',
+    fontSize: '0.75rem',
+    color: '#555',
+    marginLeft: 'auto',
+    marginRight: '1rem'
+  },
+  reviewCheckbox: {
+    width: '14px',
+    height: '14px',
+    cursor: 'pointer',
+    accentColor: '#22c55e'
+  },
+  reviewText: {
+    fontSize: '0.75rem',
+    fontWeight: '500'
   },
   content: {
     marginTop: '0.75rem',
