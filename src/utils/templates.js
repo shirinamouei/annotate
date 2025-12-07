@@ -42,6 +42,6 @@ export const OPTIONS = {
 }
 
 // Labels for null options in dropdowns
-export const NULL_LABEL = '-- None --'
-export const TRUE_LABEL = 'Yes'
-export const FALSE_LABEL = 'No'
+export const NULL_LABEL = '-unknown or unclear-'
+export const TRUE_LABEL = 'yes'
+export const FALSE_LABEL = 'no'

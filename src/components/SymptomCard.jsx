@@ -114,7 +114,7 @@ const SymptomCard = forwardRef(function SymptomCard({ symptom, index, onChange, 
           />
 
           <TextField
-            label="Associated Medication"
+            label="Associated Medication(s)"
             value={symptom.associated_medication}
             onChange={(val) => updateField('associated_medication', val)}
             placeholder="Related medication name"
