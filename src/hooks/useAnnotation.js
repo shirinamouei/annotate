@@ -102,12 +102,10 @@ export function useAnnotation(annotator) {
         .maybeSingle()
 
       if (modification && !error) {
-        console.log('Loading modification for extraction_id:', extractionId, modification.llm_output)
         setCurrentOutput(modification.llm_output)
         setSavedModification(modification.llm_output)
       } else {
         // Use original data
-        console.log('No modification found, using original for extraction_id:', extractionId)
         setCurrentOutput(JSON.parse(JSON.stringify(currentPost.llm_output)))
         setSavedModification(null)
       }
