@@ -2,19 +2,19 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../supabaseClient'
 import { posts } from '../mockData'
 
-// Helper to remove _isNew and _reviewed flags from output for comparison/saving
+// Helper to remove _isNew flag from output for saving (keep _reviewed)
 function cleanOutput(output) {
   if (!output) return output
   const cleaned = JSON.parse(JSON.stringify(output))
   if (cleaned.medications) {
     cleaned.medications = cleaned.medications.map(m => {
-      const { _isNew, _reviewed, ...rest } = m
+      const { _isNew, ...rest } = m
       return rest
     })
   }
   if (cleaned.symptoms) {
     cleaned.symptoms = cleaned.symptoms.map(s => {
-      const { _isNew, _reviewed, ...rest } = s
+      const { _isNew, ...rest } = s
       return rest
     })
   }
