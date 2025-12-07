@@ -85,31 +85,11 @@ const SymptomCard = forwardRef(function SymptomCard({ symptom, index, onChange, 
             placeholder="Symptom name (singular, no severity)"
           />
 
-          <TextField
-            label="Notes"
-            value={symptom.notes}
-            onChange={(val) => updateField('notes', val)}
-            placeholder="Additional notes"
-            multiline
-          />
-
           <SelectField
             label="Status"
             value={symptom.status}
             options={OPTIONS.status}
             onChange={(val) => updateField('status', val)}
-          />
-
-          <TextField
-            label="Associated Medication"
-            value={symptom.associated_medication}
-            onChange={(val) => updateField('associated_medication', val)}
-            placeholder="Related medication name"
-          />
-
-          <OnsetTimingPanel
-            onsetTiming={symptom.onset_timing}
-            onChange={(val) => updateField('onset_timing', val)}
           />
 
           <SelectField
@@ -134,10 +114,30 @@ const SymptomCard = forwardRef(function SymptomCard({ symptom, index, onChange, 
           />
 
           <TextField
+            label="Associated Medication"
+            value={symptom.associated_medication}
+            onChange={(val) => updateField('associated_medication', val)}
+            placeholder="Related medication name"
+          />
+
+          <OnsetTimingPanel
+            onsetTiming={symptom.onset_timing}
+            onChange={(val) => updateField('onset_timing', val)}
+          />
+
+          <TextField
             label="Source Text"
             value={symptom.source_text}
             onChange={(val) => updateField('source_text', val || '')}
             placeholder="Quote from forum post"
+            multiline
+          />
+
+          <TextField
+            label="Notes"
+            value={symptom.notes}
+            onChange={(val) => updateField('notes', val)}
+            placeholder="Additional notes"
             multiline
           />
 
