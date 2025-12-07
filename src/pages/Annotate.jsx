@@ -101,7 +101,7 @@ function Annotate() {
         <div style={{
           ...styles.rightPanel,
           border: reviewedIds.has(currentPost?.extraction_id) && !isEditing
-            ? '2px solid #22c55e'
+            ? '2px solid #2E5A4C'
             : styles.rightPanel.border,
           transition: 'border 0.2s ease'
         }}>
@@ -323,7 +323,7 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'rgba(220, 252, 231, 0.2)',
+    background: 'rgba(46, 90, 76, 0.1)',
     pointerEvents: 'none',
     zIndex: 10,
     transition: 'opacity 0.2s ease'
