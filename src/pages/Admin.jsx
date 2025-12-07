@@ -202,7 +202,7 @@ function Admin() {
               <th style={styles.th}>Reviewed</th>
               <th style={styles.th}>Modified</th>
               <th style={styles.th}>Joined</th>
-              <th style={styles.th}>Actions</th>
+              <th style={styles.th}>Download Annotated Dataset</th>
             </tr>
           </thead>
           <tbody>
@@ -230,14 +230,14 @@ function Admin() {
                     style={styles.actionButton}
                     disabled={exporting === `${annotator.id}-hybrid`}
                   >
-                    {exporting === `${annotator.id}-hybrid` ? '...' : 'Hybrid'}
+                    {exporting === `${annotator.id}-hybrid` ? '...' : 'Modified Records Only'}
                   </button>
                   <button
                     onClick={() => exportFull(annotator)}
                     style={styles.actionButton}
                     disabled={exporting === `${annotator.id}-full`}
                   >
-                    {exporting === `${annotator.id}-full` ? '...' : 'Full'}
+                    {exporting === `${annotator.id}-full` ? '...' : 'All Records'}
                   </button>
                 </td>
               </tr>
