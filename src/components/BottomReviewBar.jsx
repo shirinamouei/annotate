@@ -141,10 +141,10 @@ const styles = {
   },
   reviewBoxChecked: {
     padding: '0.75rem 1rem',
-    background: '#dcfce7',
-    border: '2px solid #22c55e',
+    background: '#e6f2ed',
+    border: '2px solid #2E5A4C',
     borderRadius: '8px',
-    boxShadow: '0 2px 8px rgba(34, 197, 94, 0.25)'
+    boxShadow: '0 2px 8px rgba(46, 90, 76, 0.25)'
   },
   reviewedContainer: {
     display: 'flex',
@@ -158,18 +158,18 @@ const styles = {
   },
   checkmark: {
     fontSize: '1.25rem',
-    color: '#22c55e',
+    color: '#2E5A4C',
     fontWeight: 'bold'
   },
   reviewedText: {
     fontSize: '1rem',
     fontWeight: '700',
-    color: '#166534'
+    color: '#2E5A4C'
   },
   updateButton: {
     padding: '0.5rem 1rem',
     fontSize: '0.875rem',
-    background: '#22c55e',
+    background: '#2E5A4C',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
