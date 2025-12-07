@@ -104,14 +104,14 @@ function Annotate() {
                 {(() => {
                   const total = currentOutput?.medications?.length || 0
                   const reviewed = currentOutput?.medications?.filter(m => m._reviewed).length || 0
-                  return `${reviewed}/${total} Medication${total !== 1 ? 's' : ''}`
+                  return `${reviewed}/${total} Medication${total !== 1 ? 's' : ''} Reviewed`
                 })()}
               </span>
               <span style={styles.symptomChip}>
                 {(() => {
                   const total = currentOutput?.symptoms?.length || 0
                   const reviewed = currentOutput?.symptoms?.filter(s => s._reviewed).length || 0
-                  return `${reviewed}/${total} Symptom${total !== 1 ? 's' : ''}`
+                  return `${reviewed}/${total} Symptom${total !== 1 ? 's' : ''} Reviewed`
                 })()}
               </span>
               {saving && <span style={styles.savingBadge}>Saving...</span>}

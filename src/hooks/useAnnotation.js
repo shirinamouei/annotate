@@ -94,18 +94,20 @@ export function useAnnotation(annotator) {
       originalOutputRef.current = JSON.parse(JSON.stringify(currentPost.llm_output))
 
       // Check if there's a modification for this record
-      const { data: modification } = await supabase
+      const { data: modification, error } = await supabase
         .from('modifications')
         .select('llm_output')
         .eq('annotator_id', annotator.id)
         .eq('extraction_id', extractionId)
-        .single()
+        .maybeSingle()
 
-      if (modification) {
+      if (modification && !error) {
+        console.log('Loading modification for extraction_id:', extractionId, modification.llm_output)
         setCurrentOutput(modification.llm_output)
         setSavedModification(modification.llm_output)
       } else {
         // Use original data
+        console.log('No modification found, using original for extraction_id:', extractionId)
         setCurrentOutput(JSON.parse(JSON.stringify(currentPost.llm_output)))
         setSavedModification(null)
       }
