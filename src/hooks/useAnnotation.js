@@ -200,6 +200,9 @@ export function useAnnotation(annotator) {
     // Save modifications when marking as reviewed
     await saveModification(currentOutput)
 
+    // Update savedModification state to reflect what was just saved
+    setSavedModification(cleanOutput(currentOutput))
+
     // If already reviewed, just return after saving
     if (reviewedIds.has(extractionId)) return true
 
