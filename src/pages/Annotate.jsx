@@ -45,7 +45,9 @@ function Annotate() {
     hasUnsavedChanges,
     showDiscardModal,
     confirmDiscard,
-    cancelNavigation
+    cancelNavigation,
+    isEditing,
+    enableEditing
   } = useAnnotation(annotator)
 
   const handleLogout = () => {
@@ -96,7 +98,13 @@ function Annotate() {
         </div>
 
         {/* Right panel - Annotation form */}
-        <div style={styles.rightPanel}>
+        <div style={{
+          ...styles.rightPanel,
+          border: reviewedIds.has(currentPost?.extraction_id) && !isEditing
+            ? '2px solid #22c55e'
+            : styles.rightPanel.border,
+          transition: 'border 0.2s ease'
+        }}>
           <h3 style={styles.panelTitle}>
             <span>Annotation</span>
             <div style={styles.titleRight}>
@@ -119,12 +127,19 @@ function Annotate() {
             </div>
           </h3>
 
-          <div style={styles.formContainer}>
+          <div style={{
+            ...styles.formContainer,
+            position: 'relative'
+          }}>
             <AnnotationForm
               output={currentOutput}
               onChange={updateOutput}
               onHoverSourceText={handleHoverSourceText}
             />
+            {/* Green overlay when reviewed and not editing */}
+            {reviewedIds.has(currentPost?.extraction_id) && !isEditing && (
+              <div style={styles.reviewedOverlay} />
+            )}
           </div>
         </div>
       </div>
@@ -135,6 +150,8 @@ function Annotate() {
         modifiedIds={modifiedIds}
         saving={saving}
         onMarkReviewed={markReviewed}
+        onEnableEditing={enableEditing}
+        isEditing={isEditing}
         currentExtractionId={currentPost?.extraction_id}
         index={index}
         totalPosts={totalPosts}
@@ -299,6 +316,17 @@ const styles = {
     padding: '0.125rem 0.5rem',
     borderRadius: '4px',
     border: '1px solid #fcd34d'
+  },
+  reviewedOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(220, 252, 231, 0.2)',
+    pointerEvents: 'none',
+    zIndex: 10,
+    transition: 'opacity 0.2s ease'
   }
 }
 

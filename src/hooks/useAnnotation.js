@@ -43,6 +43,7 @@ export function useAnnotation(annotator) {
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [savedModification, setSavedModification] = useState(null)
+  const [isEditing, setIsEditing] = useState(false)
 
   const originalOutputRef = useRef(null)
   const currentPost = posts[index]
@@ -63,9 +64,8 @@ export function useAnnotation(annotator) {
         .select('extraction_id')
         .eq('annotator_id', annotator.id)
 
-      if (reviews) {
-        setReviewedIds(new Set(reviews.map(r => r.extraction_id)))
-      }
+      const reviewedSet = new Set(reviews?.map(r => r.extraction_id) || [])
+      setReviewedIds(reviewedSet)
 
       // Load modified records
       const { data: modifications } = await supabase
@@ -75,6 +75,16 @@ export function useAnnotation(annotator) {
 
       if (modifications) {
         setModifiedIds(new Set(modifications.map(m => m.extraction_id)))
+      }
+
+      // Find first unreviewed record and navigate to it
+      const firstUnreviewedIndex = posts.findIndex(
+        post => !reviewedSet.has(post.extraction_id)
+      )
+
+      // If there's an unreviewed record, navigate to it; otherwise stay at index 0
+      if (firstUnreviewedIndex !== -1) {
+        setIndex(firstUnreviewedIndex)
       }
 
       setLoading(false)
@@ -109,6 +119,9 @@ export function useAnnotation(annotator) {
         setCurrentOutput(JSON.parse(JSON.stringify(currentPost.llm_output)))
         setSavedModification(null)
       }
+
+      // Reset editing state when loading a new record
+      setIsEditing(false)
     }
 
     loadCurrentRecord()
@@ -190,22 +203,28 @@ export function useAnnotation(annotator) {
     if (!annotator?.id || !currentPost) return
 
     const extractionId = currentPost.extraction_id
+    const isAlreadyReviewed = reviewedIds.has(extractionId)
 
-    // Check if all items are reviewed before allowing mark as reviewed
-    if (!allItemsReviewed()) {
+    // Only check if all items are reviewed when marking as reviewed for the first time
+    // For updates to already-reviewed records, skip this check
+    if (!isAlreadyReviewed && !allItemsReviewed()) {
       alert('Please review all medications and symptoms before marking this record as reviewed.')
       return false
     }
 
-    // Save modifications when marking as reviewed
+    // Save modifications when marking as reviewed or updating
     await saveModification(currentOutput)
 
     // Update savedModification state to reflect what was just saved
     setSavedModification(cleanOutput(currentOutput))
 
-    // If already reviewed, just return after saving
-    if (reviewedIds.has(extractionId)) return true
+    // Exit editing mode after saving
+    setIsEditing(false)
 
+    // If already reviewed, just return after saving (no need to re-insert into reviews table)
+    if (isAlreadyReviewed) return true
+
+    // First time marking as reviewed - add to reviews table
     const { error } = await supabase
       .from('reviews')
       .upsert({
@@ -272,6 +291,11 @@ export function useAnnotation(annotator) {
     setPendingNavigation(null)
   }, [])
 
+  // Enable editing for a reviewed record
+  const enableEditing = useCallback(() => {
+    setIsEditing(true)
+  }, [])
+
   return {
     currentPost,
     currentOutput,
@@ -289,6 +313,8 @@ export function useAnnotation(annotator) {
     hasUnsavedChanges,
     showDiscardModal: pendingNavigation !== null,
     confirmDiscard,
-    cancelNavigation
+    cancelNavigation,
+    isEditing,
+    enableEditing
   }
 }

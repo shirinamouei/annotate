@@ -3,6 +3,8 @@ function BottomReviewBar({
   modifiedIds,
   saving,
   onMarkReviewed,
+  onEnableEditing,
+  isEditing,
   currentExtractionId,
   index,
   totalPosts,
@@ -11,36 +13,48 @@ function BottomReviewBar({
   onGoToIndex
 }) {
   const isCurrentReviewed = reviewedIds.has(currentExtractionId)
+  const showAsReviewed = isCurrentReviewed && !isEditing
 
   const reviewedCount = reviewedIds.size
   const progressPercent = Math.round((reviewedCount / totalPosts) * 100)
 
   return (
     <div style={styles.bottomBar}>
-      {/* Mark as Reviewed */}
-      <div style={isCurrentReviewed ? styles.reviewBoxChecked : styles.reviewBox}>
-        <label style={styles.reviewLabel}>
-          <input
-            type="checkbox"
-            checked={isCurrentReviewed}
-            onChange={() => {
-              if (!isCurrentReviewed) {
-                onMarkReviewed()
-              }
-            }}
-            disabled={isCurrentReviewed}
-            style={styles.reviewCheckbox}
-          />
-          <span style={styles.reviewText}>
-            {isCurrentReviewed ? 'Reviewed' : 'Mark as Reviewed'}
-          </span>
-          {!isCurrentReviewed && (
+      {/* Mark as Reviewed / Update Review */}
+      <div style={showAsReviewed ? styles.reviewBoxChecked : styles.reviewBox}>
+        {showAsReviewed ? (
+          <div style={styles.reviewedContainer}>
+            <div style={styles.reviewedStatus}>
+              <span style={styles.checkmark}>✓</span>
+              <span style={styles.reviewedText}>Reviewed</span>
+            </div>
+            <button
+              onClick={onEnableEditing}
+              style={styles.updateButton}
+            >
+              Update Review
+            </button>
+            {saving && (
+              <span style={styles.savingIndicator}>Saving...</span>
+            )}
+          </div>
+        ) : (
+          <label style={styles.reviewLabel}>
+            <input
+              type="checkbox"
+              checked={false}
+              onChange={onMarkReviewed}
+              style={styles.reviewCheckbox}
+            />
+            <span style={styles.reviewText}>
+              Mark as Reviewed
+            </span>
             <span style={styles.reviewHint}>— Check this box when you have finished reviewing this record</span>
-          )}
-          {saving && (
-            <span style={styles.savingIndicator}>Saving...</span>
-          )}
-        </label>
+            {saving && (
+              <span style={styles.savingIndicator}>Saving...</span>
+            )}
+          </label>
+        )}
       </div>
 
       {/* Navigation controls */}
@@ -121,16 +135,47 @@ const styles = {
   reviewBox: {
     padding: '0.75rem 1rem',
     background: '#fffbeb',
-    border: '3px solid #f59e0b',
+    border: '2px solid #f59e0b',
     borderRadius: '8px',
     boxShadow: '0 2px 8px rgba(245, 158, 11, 0.25)'
   },
   reviewBoxChecked: {
     padding: '0.75rem 1rem',
     background: '#dcfce7',
-    border: '3px solid #22c55e',
+    border: '2px solid #22c55e',
     borderRadius: '8px',
     boxShadow: '0 2px 8px rgba(34, 197, 94, 0.25)'
+  },
+  reviewedContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem'
+  },
+  reviewedStatus: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+  checkmark: {
+    fontSize: '1.25rem',
+    color: '#22c55e',
+    fontWeight: 'bold'
+  },
+  reviewedText: {
+    fontSize: '1rem',
+    fontWeight: '700',
+    color: '#166534'
+  },
+  updateButton: {
+    padding: '0.5rem 1rem',
+    fontSize: '0.875rem',
+    background: '#22c55e',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontWeight: '600',
+    transition: 'background 0.2s'
   },
   reviewLabel: {
     display: 'flex',
