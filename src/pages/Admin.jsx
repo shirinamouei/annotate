@@ -200,6 +200,7 @@ function Admin() {
             <tr>
               <th style={styles.th}>Name</th>
               <th style={styles.th}>Reviewed</th>
+              <th style={styles.th}>Completion Percentage</th>
               <th style={styles.th}>Modified</th>
               <th style={styles.th}>Joined</th>
               <th style={styles.th}>Download Annotated Dataset</th>
@@ -219,6 +220,9 @@ function Admin() {
                       }}
                     />
                   </div>
+                </td>
+                <td style={styles.td}>
+                  {((annotator.reviewCount / posts.length) * 100).toFixed(1)}%
                 </td>
                 <td style={styles.td}>{annotator.modCount}</td>
                 <td style={styles.td}>
