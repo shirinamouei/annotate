@@ -27,8 +27,24 @@ const MedicationCard = forwardRef(function MedicationCard({ medication, index, o
 
   const handleMouseEnter = () => {
     setIsHovered(true)
-    if (onHoverSourceText && medication.name) {
-      onHoverSourceText(medication.name, '#c8e6c8') // light green for medications
+    // Use source_text if available, otherwise fall back to name
+    const textToHighlight = medication.source_text || medication.name
+    console.log('Medication hover:', { textToHighlight, source_text: medication.source_text, name: medication.name })
+    if (onHoverSourceText && textToHighlight && textToHighlight.trim()) {
+      // Split source_text by common separators to handle mixed/combined text
+      // Include ellipsis patterns (... or …) to handle truncated text
+      const terms = textToHighlight
+        .split(/[;\n]|\.\.\.+|\u2026/)  // Split by semicolon, newline, or ellipsis
+        .map(t => t.trim())
+        .filter(t => t.length > 3)  // Filter out very short fragments
+
+      console.log('Highlighting terms:', terms)
+      // If we have multiple terms, use multi-highlight mode
+      if (terms.length > 1) {
+        onHoverSourceText(null, '#c8e6c8', terms) // light green for medications
+      } else {
+        onHoverSourceText(textToHighlight, '#c8e6c8') // single highlight
+      }
     }
   }
 
@@ -42,13 +58,13 @@ const MedicationCard = forwardRef(function MedicationCard({ medication, index, o
   const cardStyle = {
     ...styles.card,
     ...(isNew ? styles.cardNew : {}),
-    ...(isHovered && medication.name ? styles.cardHovered : {})
+    ...(isHovered && (medication.source_text || medication.name) ? styles.cardHovered : {})
   }
 
   const headerStyle = {
     ...styles.header,
     ...(isNew ? styles.headerNew : {}),
-    ...(isHovered && medication.name ? styles.headerHovered : {})
+    ...(isHovered && (medication.source_text || medication.name) ? styles.headerHovered : {})
   }
 
   return (

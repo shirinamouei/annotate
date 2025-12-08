@@ -3,7 +3,8 @@
 export const NEW_MEDICATION_TEMPLATE = {
   name: "",
   route: [null],
-  dosage: [null]
+  dosage: [null],
+  source_text: ""
 }
 
 export const NEW_SYMPTOM_TEMPLATE = {

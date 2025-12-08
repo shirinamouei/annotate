@@ -17,7 +17,19 @@ const SymptomCard = forwardRef(function SymptomCard({ symptom, index, onChange, 
   const handleMouseEnter = () => {
     setIsHovered(true)
     if (onHoverSourceText && symptom.source_text) {
-      onHoverSourceText(symptom.source_text, '#f8d7e0') // light pink for symptoms
+      // Split source_text by common separators to handle mixed/combined text
+      // Include ellipsis patterns (... or …) to handle truncated text
+      const terms = symptom.source_text
+        .split(/[;\n]|\.\.\.+|\u2026/)  // Split by semicolon, newline, or ellipsis
+        .map(t => t.trim())
+        .filter(t => t.length > 3)  // Filter out very short fragments
+
+      // If we have multiple terms, use multi-highlight mode
+      if (terms.length > 1) {
+        onHoverSourceText(null, '#f8d7e0', terms) // light pink for symptoms
+      } else {
+        onHoverSourceText(symptom.source_text, '#f8d7e0') // single highlight
+      }
     }
   }
 
