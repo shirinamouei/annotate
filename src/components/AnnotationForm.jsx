@@ -13,7 +13,7 @@ function AnnotationForm({ output, onChange, onHoverSourceText }) {
   const symptomRefs = useRef({})
   const medicationRefs = useRef({})
 
-  if (!output) return <div>Loading...</div>
+  // if (!output) return <div>Loading...</div>
 
   const updateField = (field, value) => {
     onChange({
@@ -78,6 +78,8 @@ function AnnotationForm({ output, onChange, onHoverSourceText }) {
     }
   }, [newSymptomIndex])
 
+  if (!output) return <div>Loading...</div>
+  
   const updateSymptom = (index, newSymptom) => {
     const newSymptoms = [...output.symptoms]
     const oldSymptom = newSymptoms[index]
