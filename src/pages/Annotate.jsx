@@ -9,29 +9,19 @@ import ConfirmModal from '../components/ConfirmModal'
 // Wrapper component that handles auth loading
 function Annotate() {
   const navigate = useNavigate()
-  const [annotator, setAnnotator] = useState(null)
-  const [authChecked, setAuthChecked] = useState(false)
 
+  // Read sessionStorage synchronously (no useState needed)
+  const stored = sessionStorage.getItem('annotator')
+  const annotator = stored ? JSON.parse(stored) : null
+
+  // Handle redirect in useEffect (side effect)
   useEffect(() => {
-    const stored = sessionStorage.getItem('annotator')
-    if (!stored) {
+    if (!annotator) {
       navigate('/')
-      return
     }
-    setAnnotator(JSON.parse(stored))
-    setAuthChecked(true)
-  }, [navigate])
+  }, [annotator, navigate])
 
-  // Show nothing while checking auth
-  if (!authChecked) {
-    return (
-      <div style={styles.loadingContainer}>
-        <p>Loading...</p>
-      </div>
-    )
-  }
-
-  // Only render the content component when annotator is definitely available
+  // Don't render content until annotator is available
   if (!annotator) {
     return null
   }
