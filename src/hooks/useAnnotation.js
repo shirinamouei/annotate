@@ -21,6 +21,26 @@ function cleanOutput(output) {
   return cleaned
 }
 
+// Helper to strip UI flags (_isNew, _reviewed) for comparison purposes
+// Used to determine if actual content was modified
+function stripUIFlags(output) {
+  if (!output) return output
+  const stripped = JSON.parse(JSON.stringify(output))
+  if (stripped.medications) {
+    stripped.medications = stripped.medications.map(m => {
+      const { _isNew, _reviewed, ...rest } = m
+      return rest
+    })
+  }
+  if (stripped.symptoms) {
+    stripped.symptoms = stripped.symptoms.map(s => {
+      const { _isNew, _reviewed, ...rest } = s
+      return rest
+    })
+  }
+  return stripped
+}
+
 // Deep comparison helper
 function isEqual(a, b) {
   return JSON.stringify(a) === JSON.stringify(b)
@@ -128,10 +148,11 @@ export function useAnnotation(annotator) {
 
     const extractionId = currentPost.extraction_id
 
-    // Clean output (remove _isNew flags) for comparison and saving
+    // Clean output (remove _isNew flags) for saving
     const cleanedOutput = cleanOutput(newOutput)
     const originalOutput = originalOutputRef.current
-    const wasModified = !isEqual(cleanedOutput, originalOutput)
+    // Compare with UI flags stripped to determine if actual content changed
+    const wasModified = !isEqual(stripUIFlags(cleanedOutput), stripUIFlags(originalOutput))
 
     setSaving(true)
 
