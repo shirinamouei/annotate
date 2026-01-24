@@ -212,12 +212,8 @@ export function useAnnotation(annotator) {
   const markReviewed = useCallback(async () => {
     if (!annotator?.id || !currentPost) return
 
-    const extractionId = currentPost.extraction_id
-    const isAlreadyReviewed = reviewedIds.has(extractionId)
-
-    // Only check if all items are reviewed when marking as reviewed for the first time
-    // For updates to already-reviewed records, skip this check
-    if (!isAlreadyReviewed && !allItemsReviewed()) {
+    // Always check if all items are reviewed before saving
+    if (!allItemsReviewed()) {
       alert('Please review all medications and symptoms before marking this record as reviewed.')
       return false
     }
@@ -233,7 +229,7 @@ export function useAnnotation(annotator) {
       return true
     }
     return false
-  }, [annotator?.id, currentPost, reviewedIds, saveAnnotation, currentOutput, allItemsReviewed])
+  }, [annotator?.id, currentPost, saveAnnotation, currentOutput, allItemsReviewed])
 
   // State for pending navigation (used with confirmation modal)
   const [pendingNavigation, setPendingNavigation] = useState(null)
