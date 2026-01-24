@@ -6,9 +6,42 @@ import BottomReviewBar from '../components/BottomReviewBar'
 import HighlightedPost from '../components/HighlightedPost'
 import ConfirmModal from '../components/ConfirmModal'
 
+// Wrapper component that handles auth loading
 function Annotate() {
   const navigate = useNavigate()
   const [annotator, setAnnotator] = useState(null)
+  const [authChecked, setAuthChecked] = useState(false)
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem('annotator')
+    if (!stored) {
+      navigate('/')
+      return
+    }
+    setAnnotator(JSON.parse(stored))
+    setAuthChecked(true)
+  }, [navigate])
+
+  // Show nothing while checking auth
+  if (!authChecked) {
+    return (
+      <div style={styles.loadingContainer}>
+        <p>Loading...</p>
+      </div>
+    )
+  }
+
+  // Only render the content component when annotator is definitely available
+  if (!annotator) {
+    return null
+  }
+
+  return <AnnotateContent annotator={annotator} />
+}
+
+// Content component that uses the annotation hook
+function AnnotateContent({ annotator }) {
+  const navigate = useNavigate()
   const [highlightText, setHighlightText] = useState(null)
   const [highlightColor, setHighlightColor] = useState(null)
   const [highlightTerms, setHighlightTerms] = useState(null)
@@ -18,15 +51,6 @@ function Annotate() {
     setHighlightColor(color)
     setHighlightTerms(terms)
   }
-
-  useEffect(() => {
-    const stored = sessionStorage.getItem('annotator')
-    if (!stored) {
-      navigate('/')
-      return
-    }
-    setAnnotator(JSON.parse(stored))
-  }, [navigate])
 
   const {
     currentPost,
@@ -54,8 +78,6 @@ function Annotate() {
     sessionStorage.removeItem('annotator')
     navigate('/')
   }
-
-  if (!annotator) return null
 
   if (loading) {
     return (
