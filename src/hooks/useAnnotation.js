@@ -41,9 +41,19 @@ function stripUIFlags(output) {
   return stripped
 }
 
-// Deep comparison helper
+// Deep comparison helper - handles key ordering differences
 function isEqual(a, b) {
-  return JSON.stringify(a) === JSON.stringify(b)
+  if (a === b) return true
+  if (a == null || b == null) return a === b
+  if (typeof a !== 'object' || typeof b !== 'object') return a === b
+
+  const keysA = Object.keys(a).sort()
+  const keysB = Object.keys(b).sort()
+
+  if (keysA.length !== keysB.length) return false
+  if (keysA.join(',') !== keysB.join(',')) return false
+
+  return keysA.every(key => isEqual(a[key], b[key]))
 }
 
 // Check if there are unsaved changes
