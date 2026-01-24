@@ -81,6 +81,7 @@ export function useAnnotation(annotator) {
   const [loading, setLoading] = useState(true)
   const [savedModification, setSavedModification] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [pendingNavigation, setPendingNavigation] = useState(null)
 
   const originalOutputRef = useRef(null)
   const currentPost = posts[index]
@@ -250,9 +251,6 @@ export function useAnnotation(annotator) {
     }
     return false
   }, [annotator?.id, currentPost, saveAnnotation, currentOutput, allItemsReviewed])
-
-  // State for pending navigation (used with confirmation modal)
-  const [pendingNavigation, setPendingNavigation] = useState(null)
 
   // Navigation functions - set pending navigation if unsaved changes exist
   const goToNext = useCallback(() => {
