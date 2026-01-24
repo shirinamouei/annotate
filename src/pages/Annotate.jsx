@@ -10,11 +10,19 @@ import ConfirmModal from '../components/ConfirmModal'
 function Annotate() {
   const navigate = useNavigate()
 
-  // Read sessionStorage synchronously (no useState needed)
-  const stored = sessionStorage.getItem('annotator')
-  const annotator = stored ? JSON.parse(stored) : null
+  // Read sessionStorage only once on mount using lazy initialization
+  // This creates a stable object reference that won't change between renders
+  const [annotator] = useState(() => {
+    const stored = sessionStorage.getItem('annotator')
+    if (!stored) return null
+    try {
+      return JSON.parse(stored)
+    } catch {
+      return null
+    }
+  })
 
-  // Handle redirect in useEffect (side effect)
+  // Handle redirect if no annotator
   useEffect(() => {
     if (!annotator) {
       navigate('/')
@@ -26,7 +34,8 @@ function Annotate() {
     return null
   }
 
-  return <AnnotateContent annotator={annotator} />
+  // Use key to ensure fresh mount when annotator changes
+  return <AnnotateContent key={annotator.id} annotator={annotator} />
 }
 
 // Content component that uses the annotation hook
