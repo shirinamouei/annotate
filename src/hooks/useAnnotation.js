@@ -58,24 +58,19 @@ export function useAnnotation(annotator) {
     async function loadProgress() {
       setLoading(true)
 
-      // Load reviewed IDs
-      const { data: reviews } = await supabase
-        .from('reviews')
-        .select('extraction_id')
+      // Load all annotations for this annotator
+      const { data: annotations } = await supabase
+        .from('annotations')
+        .select('extraction_id, was_modified')
         .eq('annotator_id', annotator.id)
 
-      const reviewedSet = new Set(reviews?.map(r => r.extraction_id) || [])
+      const reviewedSet = new Set(annotations?.map(a => a.extraction_id) || [])
       setReviewedIds(reviewedSet)
 
-      // Load modified records
-      const { data: modifications } = await supabase
-        .from('modifications')
-        .select('extraction_id')
-        .eq('annotator_id', annotator.id)
-
-      if (modifications) {
-        setModifiedIds(new Set(modifications.map(m => m.extraction_id)))
-      }
+      const modifiedSet = new Set(
+        annotations?.filter(a => a.was_modified).map(a => a.extraction_id) || []
+      )
+      setModifiedIds(modifiedSet)
 
       // Find first unreviewed record and navigate to it
       const firstUnreviewedIndex = posts.findIndex(
@@ -93,7 +88,7 @@ export function useAnnotation(annotator) {
     loadProgress()
   }, [annotator?.id])
 
-  // Load current record's data (either modified or original)
+  // Load current record's data (either from annotation or original)
   useEffect(() => {
     if (!annotator?.id || !currentPost) return
 
@@ -103,17 +98,17 @@ export function useAnnotation(annotator) {
       // Store original for comparison
       originalOutputRef.current = JSON.parse(JSON.stringify(currentPost.llm_output))
 
-      // Check if there's a modification for this record
-      const { data: modification, error } = await supabase
-        .from('modifications')
-        .select('llm_output')
+      // Check if there's an existing annotation for this record
+      const { data: annotation, error } = await supabase
+        .from('annotations')
+        .select('final_output')
         .eq('annotator_id', annotator.id)
         .eq('extraction_id', extractionId)
         .maybeSingle()
 
-      if (modification && !error) {
-        setCurrentOutput(modification.llm_output)
-        setSavedModification(modification.llm_output)
+      if (annotation && !error) {
+        setCurrentOutput(annotation.final_output)
+        setSavedModification(annotation.final_output)
       } else {
         // Use original data
         setCurrentOutput(JSON.parse(JSON.stringify(currentPost.llm_output)))
@@ -127,8 +122,8 @@ export function useAnnotation(annotator) {
     loadCurrentRecord()
   }, [annotator?.id, index, currentPost])
 
-  // Debounced save function
-  const saveModification = useCallback(async (newOutput) => {
+  // Save annotation to database
+  const saveAnnotation = useCallback(async (newOutput) => {
     if (!annotator?.id || !currentPost) return
 
     const extractionId = currentPost.extraction_id
@@ -136,46 +131,40 @@ export function useAnnotation(annotator) {
     // Clean output (remove _isNew flags) for comparison and saving
     const cleanedOutput = cleanOutput(newOutput)
     const originalOutput = originalOutputRef.current
+    const wasModified = !isEqual(cleanedOutput, originalOutput)
 
-    // Check if the cleaned output matches the original
-    if (isEqual(cleanedOutput, originalOutput)) {
-      // No real changes - delete any existing modification and remove from modifiedIds
-      if (modifiedIds.has(extractionId)) {
-        await supabase
-          .from('modifications')
-          .delete()
-          .eq('annotator_id', annotator.id)
-          .eq('extraction_id', extractionId)
+    setSaving(true)
 
+    // Upsert annotation with both original and final output
+    const { error } = await supabase
+      .from('annotations')
+      .upsert({
+        annotator_id: annotator.id,
+        extraction_id: extractionId,
+        original_llm_output: originalOutput,
+        final_output: cleanedOutput,
+        was_modified: wasModified,
+        reviewed_at: new Date().toISOString()
+      }, {
+        onConflict: 'annotator_id,extraction_id'
+      })
+
+    if (!error) {
+      setReviewedIds(prev => new Set([...prev, extractionId]))
+      if (wasModified) {
+        setModifiedIds(prev => new Set([...prev, extractionId]))
+      } else {
         setModifiedIds(prev => {
           const next = new Set(prev)
           next.delete(extractionId)
           return next
         })
       }
-      return
-    }
-
-    setSaving(true)
-
-    // Upsert modification with cleaned output
-    const { error } = await supabase
-      .from('modifications')
-      .upsert({
-        annotator_id: annotator.id,
-        extraction_id: extractionId,
-        llm_output: cleanedOutput,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'annotator_id,extraction_id'
-      })
-
-    if (!error) {
-      setModifiedIds(prev => new Set([...prev, extractionId]))
     }
 
     setSaving(false)
-  }, [annotator?.id, currentPost, modifiedIds])
+    return !error
+  }, [annotator?.id, currentPost])
 
   // Update current output (no auto-save - only saved on review)
   const updateOutput = useCallback((newOutput) => {
@@ -198,7 +187,7 @@ export function useAnnotation(annotator) {
     return allMedsReviewed && allSymptomsReviewed
   }, [currentOutput])
 
-  // Mark current record as reviewed (and save any modifications)
+  // Mark current record as reviewed (and save annotation)
   const markReviewed = useCallback(async () => {
     if (!annotator?.id || !currentPost) return
 
@@ -212,35 +201,18 @@ export function useAnnotation(annotator) {
       return false
     }
 
-    // Save modifications when marking as reviewed or updating
-    await saveModification(currentOutput)
+    // Save annotation (handles both new and updates)
+    const success = await saveAnnotation(currentOutput)
 
-    // Update savedModification state to reflect what was just saved
-    setSavedModification(cleanOutput(currentOutput))
-
-    // Exit editing mode after saving
-    setIsEditing(false)
-
-    // If already reviewed, just return after saving (no need to re-insert into reviews table)
-    if (isAlreadyReviewed) return true
-
-    // First time marking as reviewed - add to reviews table
-    const { error } = await supabase
-      .from('reviews')
-      .upsert({
-        annotator_id: annotator.id,
-        extraction_id: extractionId,
-        reviewed_at: new Date().toISOString()
-      }, {
-        onConflict: 'annotator_id,extraction_id'
-      })
-
-    if (!error) {
-      setReviewedIds(prev => new Set([...prev, extractionId]))
+    if (success) {
+      // Update savedModification state to reflect what was just saved
+      setSavedModification(cleanOutput(currentOutput))
+      // Exit editing mode after saving
+      setIsEditing(false)
       return true
     }
     return false
-  }, [annotator?.id, currentPost, reviewedIds, saveModification, currentOutput, allItemsReviewed])
+  }, [annotator?.id, currentPost, reviewedIds, saveAnnotation, currentOutput, allItemsReviewed])
 
   // State for pending navigation (used with confirmation modal)
   const [pendingNavigation, setPendingNavigation] = useState(null)

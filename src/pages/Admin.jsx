@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { posts } from '../mockData'
 
@@ -25,25 +25,26 @@ function Admin() {
   const loadAnnotators = async () => {
     setLoading(true)
 
-    // Get all annotators with their review and modification counts
+    // Get all annotators with their annotation counts
     const { data: annotatorsData } = await supabase
       .from('annotators')
       .select('*')
       .order('created_at', { ascending: false })
 
     if (annotatorsData) {
-      // Get counts for each annotator
+      // Get counts for each annotator from annotations table
       const annotatorsWithCounts = await Promise.all(
         annotatorsData.map(async (annotator) => {
           const { count: reviewCount } = await supabase
-            .from('reviews')
+            .from('annotations')
             .select('*', { count: 'exact', head: true })
             .eq('annotator_id', annotator.id)
 
           const { count: modCount } = await supabase
-            .from('modifications')
+            .from('annotations')
             .select('*', { count: 'exact', head: true })
             .eq('annotator_id', annotator.id)
+            .eq('was_modified', true)
 
           return {
             ...annotator,
@@ -62,26 +63,20 @@ function Admin() {
   const exportHybrid = async (annotator) => {
     setExporting(`${annotator.id}-hybrid`)
 
-    // Get reviewed IDs
-    const { data: reviews } = await supabase
-      .from('reviews')
-      .select('extraction_id')
-      .eq('annotator_id', annotator.id)
-
-    // Get modifications
-    const { data: modifications } = await supabase
-      .from('modifications')
-      .select('extraction_id, llm_output')
+    // Get all annotations for this annotator
+    const { data: annotations } = await supabase
+      .from('annotations')
+      .select('extraction_id, final_output, was_modified')
       .eq('annotator_id', annotator.id)
 
     const exportData = {
       annotator: annotator.name,
       exported_at: new Date().toISOString(),
       total_records: posts.length,
-      reviewed_ids: reviews?.map(r => r.extraction_id) || [],
-      modified_records: modifications?.map(m => ({
-        extraction_id: m.extraction_id,
-        llm_output: m.llm_output
+      reviewed_ids: annotations?.map(a => a.extraction_id) || [],
+      modified_records: annotations?.filter(a => a.was_modified).map(a => ({
+        extraction_id: a.extraction_id,
+        llm_output: a.final_output
       })) || []
     }
 
@@ -92,36 +87,29 @@ function Admin() {
   const exportFull = async (annotator) => {
     setExporting(`${annotator.id}-full`)
 
-    // Get reviewed IDs
-    const { data: reviews } = await supabase
-      .from('reviews')
-      .select('extraction_id')
+    // Get all annotations for this annotator
+    const { data: annotations } = await supabase
+      .from('annotations')
+      .select('extraction_id, original_llm_output, final_output, was_modified')
       .eq('annotator_id', annotator.id)
 
-    const reviewedSet = new Set(reviews?.map(r => r.extraction_id) || [])
-
-    // Get modifications
-    const { data: modifications } = await supabase
-      .from('modifications')
-      .select('extraction_id, llm_output')
-      .eq('annotator_id', annotator.id)
-
-    const modificationMap = new Map(
-      modifications?.map(m => [m.extraction_id, m.llm_output]) || []
+    // Build maps for quick lookup
+    const annotationMap = new Map(
+      annotations?.map(a => [a.extraction_id, a]) || []
     )
 
     // Build full export with all records
     const records = posts.map(post => {
       const extractionId = post.extraction_id
-      const reviewed = reviewedSet.has(extractionId)
-      const modified = modificationMap.has(extractionId)
+      const annotation = annotationMap.get(extractionId)
 
       return {
         extraction_id: extractionId,
         post_id: post.post_id,
-        reviewed,
-        modified,
-        llm_output: modified ? modificationMap.get(extractionId) : post.llm_output
+        reviewed: !!annotation,
+        modified: annotation?.was_modified || false,
+        original_llm_output: annotation?.original_llm_output || post.llm_output,
+        final_output: annotation?.final_output || post.llm_output
       }
     })
 
