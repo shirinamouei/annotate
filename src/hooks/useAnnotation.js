@@ -47,6 +47,13 @@ function isEqual(a, b) {
   if (a == null || b == null) return a === b
   if (typeof a !== 'object' || typeof b !== 'object') return a === b
 
+  // Handle arrays
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false
+    return a.every((item, i) => isEqual(item, b[i]))
+  }
+  if (Array.isArray(a) || Array.isArray(b)) return false
+
   const keysA = Object.keys(a).sort()
   const keysB = Object.keys(b).sort()
 
