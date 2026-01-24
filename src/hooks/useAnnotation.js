@@ -84,17 +84,18 @@ export function useAnnotation(annotator) {
         .select('extraction_id, was_modified')
         .eq('annotator_id', annotator.id)
 
-      const reviewedSet = new Set(annotations?.map(a => a.extraction_id) || [])
+      // Convert to strings for consistent comparison (DB stores as TEXT, mockData has numbers)
+      const reviewedSet = new Set(annotations?.map(a => String(a.extraction_id)) || [])
       setReviewedIds(reviewedSet)
 
       const modifiedSet = new Set(
-        annotations?.filter(a => a.was_modified).map(a => a.extraction_id) || []
+        annotations?.filter(a => a.was_modified).map(a => String(a.extraction_id)) || []
       )
       setModifiedIds(modifiedSet)
 
       // Find first unreviewed record and navigate to it
       const firstUnreviewedIndex = posts.findIndex(
-        post => !reviewedSet.has(post.extraction_id)
+        post => !reviewedSet.has(String(post.extraction_id))
       )
 
       // If there's an unreviewed record, navigate to it; otherwise stay at index 0
@@ -113,7 +114,8 @@ export function useAnnotation(annotator) {
     if (!annotator?.id || !currentPost) return
 
     async function loadCurrentRecord() {
-      const extractionId = currentPost.extraction_id
+      // Convert to string for consistent type handling (DB stores as TEXT)
+      const extractionId = String(currentPost.extraction_id)
 
       // Store original for comparison
       originalOutputRef.current = JSON.parse(JSON.stringify(currentPost.llm_output))
@@ -146,7 +148,8 @@ export function useAnnotation(annotator) {
   const saveAnnotation = useCallback(async (newOutput) => {
     if (!annotator?.id || !currentPost) return
 
-    const extractionId = currentPost.extraction_id
+    // Convert to string for consistent type handling (DB stores as TEXT)
+    const extractionId = String(currentPost.extraction_id)
 
     // Clean output (remove _isNew flags) for saving
     const cleanedOutput = cleanOutput(newOutput)

@@ -100,7 +100,7 @@ function Annotate() {
         {/* Right panel - Annotation form */}
         <div style={{
           ...styles.rightPanel,
-          border: reviewedIds.has(currentPost?.extraction_id) && !isEditing
+          border: reviewedIds.has(String(currentPost?.extraction_id)) && !isEditing
             ? '2px solid #2E5A4C'
             : styles.rightPanel.border,
           transition: 'border 0.2s ease'
@@ -137,7 +137,7 @@ function Annotate() {
               onHoverSourceText={handleHoverSourceText}
             />
             {/* Green overlay when reviewed and not editing */}
-            {reviewedIds.has(currentPost?.extraction_id) && !isEditing && (
+            {reviewedIds.has(String(currentPost?.extraction_id)) && !isEditing && (
               <div style={styles.reviewedOverlay} />
             )}
           </div>
@@ -152,7 +152,7 @@ function Annotate() {
         onMarkReviewed={markReviewed}
         onEnableEditing={enableEditing}
         isEditing={isEditing}
-        currentExtractionId={currentPost?.extraction_id}
+        currentExtractionId={String(currentPost?.extraction_id)}
         index={index}
         totalPosts={totalPosts}
         onPrevious={goToPrevious}
