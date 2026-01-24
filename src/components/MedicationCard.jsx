@@ -29,7 +29,6 @@ const MedicationCard = forwardRef(function MedicationCard({ medication, index, o
     setIsHovered(true)
     // Use source_text if available, otherwise fall back to name
     const textToHighlight = medication.source_text || medication.name
-    console.log('Medication hover:', { textToHighlight, source_text: medication.source_text, name: medication.name })
     if (onHoverSourceText && textToHighlight && textToHighlight.trim()) {
       // Split source_text by common separators to handle mixed/combined text
       // Include ellipsis patterns (... or …) to handle truncated text
@@ -38,7 +37,6 @@ const MedicationCard = forwardRef(function MedicationCard({ medication, index, o
         .map(t => t.trim())
         .filter(t => t.length > 3)  // Filter out very short fragments
 
-      console.log('Highlighting terms:', terms)
       // If we have multiple terms, use multi-highlight mode
       if (terms.length > 1) {
         onHoverSourceText(null, '#c8e6c8', terms) // light green for medications
